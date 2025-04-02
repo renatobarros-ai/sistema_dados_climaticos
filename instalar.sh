@@ -32,8 +32,13 @@ echo "Instalando dependências..."
 pip install -r requisitos.txt
 
 # Verificar se inmetpy deve ser instalado
-read -p "Deseja instalar a biblioteca inmetpy para acesso à API do INMET? (s/n): " instalar_inmet
-if [[ $instalar_inmet == "s" || $instalar_inmet == "S" ]]; then
+echo "Deseja instalar a biblioteca inmetpy para acesso à API do INMET?"
+echo "1. Sim"
+echo "2. Não"
+read -p "Escolha uma opção [1]: " opcao_inmet
+opcao_inmet=${opcao_inmet:-1}
+
+if [[ $opcao_inmet == "1" ]]; then
     echo "Instalando inmetpy..."
     pip install inmetpy
 fi
@@ -44,21 +49,50 @@ mkdir -p dados/openweather
 mkdir -p dados/inmet
 mkdir -p logs
 
+# Configuração das credenciais
+echo "Configurando credenciais de API..."
+mkdir -p config
+
+# Criar arquivo de credenciais se não existir
+if [ ! -f config/credenciais.json ]; then
+    echo '{
+  "openweather": {
+    "api_key": ""
+  },
+  "inmet": {
+    "token": ""
+  }
+}' > config/credenciais.json
+fi
+
 # Configuração do token INMET (opcional)
-read -p "Você possui um token do INMET? (s/n): " tem_token
-if [[ $tem_token == "s" || $tem_token == "S" ]]; then
+echo "Você possui um token do INMET?"
+echo "1. Sim"
+echo "2. Não"
+read -p "Escolha uma opção [2]: " opcao_token
+opcao_token=${opcao_token:-2}
+
+if [[ $opcao_token == "1" ]]; then
     read -p "Digite seu token do INMET: " token_inmet
-    # Atualizar o token no arquivo Python
-    sed -i "s/TOKEN_INMET = \"seu_token_aqui\"/TOKEN_INMET = \"$token_inmet\"/" coletor_climatico.py
+    # Atualizar o token no arquivo de configuração
+    # Usando temp file para compatibilidade com diferentes sistemas
+    jq --arg token "$token_inmet" '.inmet.token = $token' config/credenciais.json > config/credenciais.json.tmp
+    mv config/credenciais.json.tmp config/credenciais.json
     echo "Token INMET configurado."
 fi
 
 # Configuração da chave OpenWeather (se necessário)
-read -p "Deseja atualizar a chave API do OpenWeather? (s/n): " atualizar_chave
-if [[ $atualizar_chave == "s" || $atualizar_chave == "S" ]]; then
+echo "Deseja atualizar a chave API do OpenWeather?"
+echo "1. Sim"
+echo "2. Não"
+read -p "Escolha uma opção [2]: " opcao_api
+opcao_api=${opcao_api:-2}
+
+if [[ $opcao_api == "1" ]]; then
     read -p "Digite sua chave API do OpenWeather: " chave_ow
-    # Atualizar a chave no arquivo Python
-    sed -i "s/CHAVE_API_OPENWEATHER = \"0476cdfcc3da9e85452287b12c174cf1\"/CHAVE_API_OPENWEATHER = \"$chave_ow\"/" coletor_climatico.py
+    # Atualizar a chave no arquivo de configuração
+    jq --arg key "$chave_ow" '.openweather.api_key = $key' config/credenciais.json > config/credenciais.json.tmp
+    mv config/credenciais.json.tmp config/credenciais.json
     echo "Chave API OpenWeather configurada."
 fi
 
@@ -80,8 +114,13 @@ echo "python analisador_dados.py --listar-regioes"
 echo ""
 
 # Perguntar se deseja configurar cron
-read -p "Deseja configurar a execução automática diária? (s/n): " configurar_cron
-if [[ $configurar_cron == "s" || $configurar_cron == "S" ]]; then
+echo "Deseja configurar a execução automática diária?"
+echo "1. Sim"
+echo "2. Não"
+read -p "Escolha uma opção [2]: " opcao_cron
+opcao_cron=${opcao_cron:-2}
+
+if [[ $opcao_cron == "1" ]]; then
     # Obter caminho absoluto
     DIR_SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
     

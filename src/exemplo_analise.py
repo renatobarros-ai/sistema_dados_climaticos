@@ -140,8 +140,15 @@ def analisar_temperatura(dados, regiao, salvar=False):
     plt.tight_layout()
     
     if salvar:
-        plt.savefig(f'temperatura_{regiao}.png', dpi=300, bbox_inches='tight')
-        print(f"Gráfico salvo como temperatura_{regiao}.png")
+        # Salvar na pasta Downloads
+        diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.exists(diretorio):
+            print("Pasta Downloads não encontrada. Usando diretório atual.")
+            diretorio = os.getcwd()
+            
+        caminho_arquivo = os.path.join(diretorio, f'temperatura_{regiao}.png')
+        plt.savefig(caminho_arquivo, dpi=300, bbox_inches='tight')
+        print(f"Gráfico salvo em: {caminho_arquivo}")
     else:
         plt.show()
     
@@ -194,8 +201,15 @@ def analisar_precipitacao(dados, regiao, salvar=False):
     plt.tight_layout()
     
     if salvar:
-        plt.savefig(f'precipitacao_{regiao}.png', dpi=300, bbox_inches='tight')
-        print(f"Gráfico salvo como precipitacao_{regiao}.png")
+        # Salvar na pasta Downloads
+        diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.exists(diretorio):
+            print("Pasta Downloads não encontrada. Usando diretório atual.")
+            diretorio = os.getcwd()
+            
+        caminho_arquivo = os.path.join(diretorio, f'precipitacao_{regiao}.png')
+        plt.savefig(caminho_arquivo, dpi=300, bbox_inches='tight')
+        print(f"Gráfico salvo em: {caminho_arquivo}")
     else:
         plt.show()
     
@@ -258,8 +272,15 @@ def analisar_correlacao(dados, regiao, salvar=False):
     plt.tight_layout()
     
     if salvar:
-        plt.savefig(f'correlacao_{regiao}.png', dpi=300, bbox_inches='tight')
-        print(f"Gráfico salvo como correlacao_{regiao}.png")
+        # Salvar na pasta Downloads
+        diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.exists(diretorio):
+            print("Pasta Downloads não encontrada. Usando diretório atual.")
+            diretorio = os.getcwd()
+            
+        caminho_arquivo = os.path.join(diretorio, f'correlacao_{regiao}.png')
+        plt.savefig(caminho_arquivo, dpi=300, bbox_inches='tight')
+        print(f"Gráfico salvo em: {caminho_arquivo}")
     else:
         plt.show()
     
@@ -295,9 +316,17 @@ def main():
         print(f"\nAnalisando dados climáticos para: {regiao_escolhida.replace('_', ' ')}")
         
         # Escolher tipo de dados
-        tipo = input("\nTipo de dados (atual/historico) [atual]: ").lower() or "atual"
-        if tipo not in ["atual", "historico"]:
-            print("Tipo inválido. Usando 'atual'.")
+        print("\nTipo de dados:")
+        print("1. Atual (últimos dias)")
+        print("2. Histórico (anos anteriores)")
+        escolha_tipo = input("\nEscolha uma opção [1]: ") or "1"
+        
+        if escolha_tipo == "1":
+            tipo = "atual"
+        elif escolha_tipo == "2":
+            tipo = "historico"
+        else:
+            print("Opção inválida. Usando 'atual'.")
             tipo = "atual"
         
         # Carregar dados

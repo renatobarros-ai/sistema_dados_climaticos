@@ -232,13 +232,25 @@ def menu_coleta():
                 else:
                     regiao_escolhida = None
                 
-                # Escolher tipo de dados
-                modo = input("Tipo de dados (atual/historico/ambos) [atual]: ").lower() or "atual"
-                if modo not in ["atual", "historico", "ambos"]:
-                    print_warning("Tipo inválido. Usando 'atual'.")
+                # Escolher tipo de dados com menu numérico
+                print("\nTipo de dados:")
+                print(f"{Fore.CYAN}1.{Style.RESET_ALL} Dados atuais (últimos dias)")
+                print(f"{Fore.CYAN}2.{Style.RESET_ALL} Dados históricos (anos anteriores)")
+                print(f"{Fore.CYAN}3.{Style.RESET_ALL} Ambos (atual + histórico)")
+                
+                opcao_tipo = input("\nEscolha uma opção [1]: ") or "1"
+                
+                if opcao_tipo == "1":
+                    modo = "atual"
+                elif opcao_tipo == "2":
+                    modo = "historico"
+                elif opcao_tipo == "3":
+                    modo = "ambos"
+                else:
+                    print_warning("Opção inválida. Usando 'atual'.")
                     modo = "atual"
                 
-                # Executar coleta
+                # Executar coleta para a região específica
                 executar_coleta(modo=modo, regioes=regiao_escolhida)
                 
             except ValueError:
@@ -319,19 +331,34 @@ def visualizar_dados(regiao, tipo="atual"):
             print(f"  Dias com chuva: {dias_com_chuva}")
         
         # Perguntar se deseja visualizar gráficos
-        if input("\nDeseja visualizar gráficos? (s/n) [s]: ").lower() != "n":
+        print("\nDeseja visualizar gráficos?")
+        print(f"{Fore.CYAN}1.{Style.RESET_ALL} Sim")
+        print(f"{Fore.CYAN}2.{Style.RESET_ALL} Não")
+        opcao_graficos = input("Escolha uma opção [1]: ") or "1"
+        
+        if opcao_graficos == "1":
             from src.analisador_dados import plotar_temperatura, plotar_umidade, plotar_precipitacao
             
-            escolha = input("Qual gráfico? (temp/umidade/chuva/todos) [todos]: ").lower() or "todos"
+            print("\nQual gráfico deseja visualizar?")
+            print(f"{Fore.CYAN}1.{Style.RESET_ALL} Temperatura")
+            print(f"{Fore.CYAN}2.{Style.RESET_ALL} Umidade")
+            print(f"{Fore.CYAN}3.{Style.RESET_ALL} Precipitação")
+            print(f"{Fore.CYAN}4.{Style.RESET_ALL} Todos os gráficos")
+            opcao_grafico = input("Escolha uma opção [4]: ") or "4"
             
-            if escolha in ("temp", "todos") and colunas_temperatura:
+            if opcao_grafico == "1" and colunas_temperatura:
                 plotar_temperatura(dados, regiao)
-            
-            if escolha in ("umidade", "todos") and colunas_umidade:
+            elif opcao_grafico == "2" and colunas_umidade:
                 plotar_umidade(dados, regiao)
-            
-            if escolha in ("chuva", "todos") and colunas_chuva:
+            elif opcao_grafico == "3" and colunas_chuva:
                 plotar_precipitacao(dados, regiao)
+            else:  # Opção 4 ou inválida: mostrar todos
+                if colunas_temperatura:
+                    plotar_temperatura(dados, regiao)
+                if colunas_umidade:
+                    plotar_umidade(dados, regiao)
+                if colunas_chuva:
+                    plotar_precipitacao(dados, regiao)
             
             plt.show()
     
@@ -781,6 +808,10 @@ def exportar_dados_csv(regiao, periodo="ultimo_mes"):
             dias = 90
         elif periodo == "ultima_semana":
             dias = 7
+        elif periodo == "ultimos_5_anos":
+            dias = 365 * 5
+        elif periodo == "todos_dados":
+            dias = 365 * 15  # Até 15 anos
         
         # Carregar dados
         dados = carregar_dados_recentes(regiao, dias=dias)
@@ -789,15 +820,13 @@ def exportar_dados_csv(regiao, periodo="ultimo_mes"):
             print_error(f"Nenhum dado encontrado para {regiao}!")
             return
         
-        # Solicitar caminho para salvar
-        diretorio = input("Diretório para salvar (ENTER para usar o diretório atual): ")
+        # Usando pasta Downloads do usuário para salvar
+        diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
         
-        if not diretorio:
-            diretorio = os.getcwd()
-        
+        # Verificar se existe a pasta Downloads, caso contrário usar o diretório atual
         if not os.path.exists(diretorio):
-            print_error(f"O diretório '{diretorio}' não existe!")
-            return
+            print_warning(f"Pasta Downloads não encontrada. Usando diretório atual.")
+            diretorio = os.getcwd()
         
         # Criar nome de arquivo
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -850,6 +879,8 @@ def menu_exportacao():
                     print(f"{Fore.CYAN}2.{Style.RESET_ALL} Último mês")
                     print(f"{Fore.CYAN}3.{Style.RESET_ALL} Últimos 3 meses")
                     print(f"{Fore.CYAN}4.{Style.RESET_ALL} Último ano")
+                    print(f"{Fore.CYAN}5.{Style.RESET_ALL} Últimos 5 anos")
+                    print(f"{Fore.CYAN}6.{Style.RESET_ALL} Todos os dados (até 15 anos)")
                     
                     periodo_opcao = input("\nEscolha uma opção [2]: ") or "2"
                     
@@ -860,6 +891,10 @@ def menu_exportacao():
                         periodo = "ultimos_3_meses"
                     elif periodo_opcao == "4":
                         periodo = "ultimo_ano"
+                    elif periodo_opcao == "5":
+                        periodo = "ultimos_5_anos"
+                    elif periodo_opcao == "6":
+                        periodo = "todos_dados"
                     
                     exportar_dados_csv(regiao, periodo)
                 else:
@@ -901,25 +936,38 @@ def menu_exportacao():
                 if 1 <= escolha <= len(regioes):
                     regiao = regioes[escolha - 1]
                     
-                    # Carregar dados
+                    # Carregar dados com opções de período
+                    print("\nSelecione o período:")
+                    print(f"{Fore.CYAN}1.{Style.RESET_ALL} Último mês")
+                    print(f"{Fore.CYAN}2.{Style.RESET_ALL} Último ano")
+                    print(f"{Fore.CYAN}3.{Style.RESET_ALL} Últimos 5 anos")
+                    print(f"{Fore.CYAN}4.{Style.RESET_ALL} Todos os dados (até 15 anos)")
+                    
+                    periodo_opcao = input("\nEscolha uma opção [1]: ") or "1"
+                    
+                    dias = 30  # padrão: último mês
+                    if periodo_opcao == "2":
+                        dias = 365  # último ano
+                    elif periodo_opcao == "3":
+                        dias = 365 * 5  # últimos 5 anos
+                    elif periodo_opcao == "4":
+                        dias = 365 * 15  # todos os dados (até 15 anos)
+                    
                     from src.analisador_dados import carregar_dados_recentes
-                    dados = carregar_dados_recentes(regiao, dias=30)
+                    dados = carregar_dados_recentes(regiao, dias=dias)
                     
                     if dados is None or dados.empty:
                         print_error(f"Nenhum dado encontrado para {regiao}!")
                         pause()
                         continue
                     
-                    # Solicitar caminho para salvar
-                    diretorio = input("Diretório para salvar (ENTER para usar o diretório atual): ")
+                    # Usando pasta Downloads do usuário para salvar
+                    diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
                     
-                    if not diretorio:
-                        diretorio = os.getcwd()
-                    
+                    # Verificar se existe a pasta Downloads, caso contrário usar o diretório atual
                     if not os.path.exists(diretorio):
-                        print_error(f"O diretório '{diretorio}' não existe!")
-                        pause()
-                        continue
+                        print_warning(f"Pasta Downloads não encontrada. Usando diretório atual.")
+                        diretorio = os.getcwd()
                     
                     # Criar nome de arquivo
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -959,22 +1007,35 @@ def menu_exportacao():
                 if 1 <= escolha <= len(regioes):
                     regiao = regioes[escolha - 1]
                     
-                    # Solicitar diretório para salvar
-                    diretorio = input("Diretório para salvar (ENTER para usar o diretório atual): ")
+                    # Usando pasta Downloads do usuário para salvar
+                    diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
                     
-                    if not diretorio:
+                    # Verificar se existe a pasta Downloads, caso contrário usar o diretório atual
+                    if not os.path.exists(diretorio):
+                        print_warning(f"Pasta Downloads não encontrada. Usando diretório atual.")
                         diretorio = os.getcwd()
                     
-                    if not os.path.exists(diretorio):
-                        print_error(f"O diretório '{diretorio}' não existe!")
-                        pause()
-                        continue
+                    # Carregar dados com opções de período
+                    print("\nSelecione o período para análise:")
+                    print(f"{Fore.CYAN}1.{Style.RESET_ALL} Último mês")
+                    print(f"{Fore.CYAN}2.{Style.RESET_ALL} Último ano")
+                    print(f"{Fore.CYAN}3.{Style.RESET_ALL} Últimos 5 anos")
+                    print(f"{Fore.CYAN}4.{Style.RESET_ALL} Todos os dados (até 15 anos)")
                     
-                    # Carregar dados
+                    periodo_opcao = input("\nEscolha uma opção [1]: ") or "1"
+                    
+                    dias = 30  # padrão: último mês
+                    if periodo_opcao == "2":
+                        dias = 365  # último ano
+                    elif periodo_opcao == "3":
+                        dias = 365 * 5  # últimos 5 anos
+                    elif periodo_opcao == "4":
+                        dias = 365 * 15  # todos os dados (até 15 anos)
+                    
                     from src.analisador_dados import carregar_dados_recentes
                     from src.analisador_dados import plotar_temperatura, plotar_umidade, plotar_precipitacao
                     
-                    dados = carregar_dados_recentes(regiao, dias=30)
+                    dados = carregar_dados_recentes(regiao, dias=dias)
                     
                     if dados is None or dados.empty:
                         print_error(f"Nenhum dado encontrado para {regiao}!")

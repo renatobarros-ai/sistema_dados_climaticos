@@ -137,8 +137,20 @@ def plotar_temperatura(dados, regiao, caminho_salvar=None):
         plt.savefig(caminho_salvar)
         print(f"Gráfico salvo em: {caminho_salvar}")
     else:
-        plt.tight_layout()
-        plt.show()
+        # Salvar no diretório Downloads do usuário se não for especificado
+        diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.exists(diretorio):
+            print("Pasta Downloads não encontrada. Mostrando gráfico sem salvar.")
+            plt.tight_layout()
+            plt.show()
+        else:
+            # Criar nome de arquivo com timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            caminho_arquivo = os.path.join(diretorio, f'temperatura_{regiao}_{timestamp}.png')
+            plt.savefig(caminho_arquivo)
+            print(f"Gráfico salvo em: {caminho_arquivo}")
+            plt.tight_layout()
+            plt.show()
 
 
 def plotar_umidade(dados, regiao, caminho_salvar=None):
@@ -178,8 +190,20 @@ def plotar_umidade(dados, regiao, caminho_salvar=None):
         plt.savefig(caminho_salvar)
         print(f"Gráfico salvo em: {caminho_salvar}")
     else:
-        plt.tight_layout()
-        plt.show()
+        # Salvar no diretório Downloads do usuário se não for especificado
+        diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.exists(diretorio):
+            print("Pasta Downloads não encontrada. Mostrando gráfico sem salvar.")
+            plt.tight_layout()
+            plt.show()
+        else:
+            # Criar nome de arquivo com timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            caminho_arquivo = os.path.join(diretorio, f'umidade_{regiao}_{timestamp}.png')
+            plt.savefig(caminho_arquivo)
+            print(f"Gráfico salvo em: {caminho_arquivo}")
+            plt.tight_layout()
+            plt.show()
 
 
 def plotar_precipitacao(dados, regiao, caminho_salvar=None):
@@ -221,8 +245,20 @@ def plotar_precipitacao(dados, regiao, caminho_salvar=None):
         plt.savefig(caminho_salvar)
         print(f"Gráfico salvo em: {caminho_salvar}")
     else:
-        plt.tight_layout()
-        plt.show()
+        # Salvar no diretório Downloads do usuário se não for especificado
+        diretorio = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.exists(diretorio):
+            print("Pasta Downloads não encontrada. Mostrando gráfico sem salvar.")
+            plt.tight_layout()
+            plt.show()
+        else:
+            # Criar nome de arquivo com timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            caminho_arquivo = os.path.join(diretorio, f'precipitacao_{regiao}_{timestamp}.png')
+            plt.savefig(caminho_arquivo)
+            print(f"Gráfico salvo em: {caminho_arquivo}")
+            plt.tight_layout()
+            plt.show()
 
 
 if __name__ == "__main__":

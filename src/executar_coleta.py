@@ -71,12 +71,12 @@ def main():
         # Executar coleta conforme modo
         if args.modo in ('atual', 'ambos'):
             logger.info("Iniciando coleta de dados atuais")
-            coletor.coletar_para_todas_regioes(modo="atual")
+            coletor.coletar_para_todas_regioes(modo="atual", regioes_especificas=args.regioes)
             logger.info("Coleta de dados atuais finalizada")
         
         if args.modo in ('historico', 'ambos'):
             logger.info("Iniciando coleta de dados históricos")
-            coletor.coletar_para_todas_regioes(modo="historico")
+            coletor.coletar_para_todas_regioes(modo="historico", regioes_especificas=args.regioes)
             logger.info("Coleta de dados históricos finalizada")
         
         logger.info("Execução concluída com sucesso")

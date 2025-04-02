@@ -1,0 +1,3 @@
+"""
+Funcionalidades principais do sistema
+"""

@@ -1,0 +1,2 @@
+data,hora,temperatura,sensacao_termica,temp_min,temp_max,pressao,umidade,velocidade_vento,direcao_vento,nuvens,clima_principal,clima_descricao,chuva_1h,fonte,regiao,latitude,longitude,datetime
+2025-04-02,15:26:05,33.99,34.92,33.99,33.99,1010,38,4.12,170,40,Clouds,nuvens dispersas,0,openweather,Petrolina_PE,-9.38,-40.48,2025-04-02 15:26:05

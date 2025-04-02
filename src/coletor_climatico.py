@@ -24,6 +24,13 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 
+# Tentar importar biblioteca inmetpy - usada como fonte secundária
+try:
+    from inmetpy import INMET
+    INMET_DISPONIVEL = True
+except ImportError:
+    INMET_DISPONIVEL = False
+
 # Configuração de Logging
 DIRETORIO_BASE = Path(__file__).parent.parent
 DIRETORIO_LOGS = DIRETORIO_BASE / "logs"
@@ -50,16 +57,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configurações do Sistema
-CHAVE_API_OPENWEATHER = "0476cdfcc3da9e85452287b12c174cf1"  # Substitua pela sua API key real
-TOKEN_INMET = "seu_token_aqui"  # Substitua pelo seu token real
+CHAVE_API_OPENWEATHER = ""  # Será preenchido a partir de credenciais.json
+TOKEN_INMET = ""  # Será preenchido a partir de credenciais.json
 
 # Diretórios de dados
-DIRETORIO_BASE = Path(__file__).parent.parent
 DIRETORIO_DADOS = DIRETORIO_BASE / "dados"
 DIRETORIO_OPENWEATHER = DIRETORIO_DADOS / "openweather"
 DIRETORIO_INMET = DIRETORIO_DADOS / "inmet"
 DIRETORIO_CONFIG = DIRETORIO_BASE / "config"
-DIRETORIO_LOGS = DIRETORIO_BASE / "logs"
 
 # Garantir que os diretórios existam
 DIRETORIO_OPENWEATHER.mkdir(exist_ok=True, parents=True)
@@ -67,21 +72,33 @@ DIRETORIO_INMET.mkdir(exist_ok=True, parents=True)
 DIRETORIO_LOGS.mkdir(exist_ok=True, parents=True)
 
 # Carregar credenciais das APIs
-try:
-    with open(DIRETORIO_CONFIG / "credenciais.json", "r", encoding="utf-8") as arquivo_credenciais:
-        import json
-        credenciais = json.load(arquivo_credenciais)
-        CHAVE_API_OPENWEATHER = credenciais.get("openweather", {}).get("api_key", CHAVE_API_OPENWEATHER)
-        TOKEN_INMET = credenciais.get("inmet", {}).get("token", TOKEN_INMET)
-        logger.info("Credenciais das APIs carregadas com sucesso")
-except Exception as e:
-    logger.warning(f"Erro ao carregar arquivo de credenciais: {e}")
-    logger.warning("Usando valores padrão para credenciais")
+arquivo_credenciais = DIRETORIO_CONFIG / "credenciais.json"
+if arquivo_credenciais.exists():
+    try:
+        with open(arquivo_credenciais, "r", encoding="utf-8") as f:
+            credenciais = json.load(f)
+            CHAVE_API_OPENWEATHER = credenciais.get("openweather", {}).get("api_key", "")
+            TOKEN_INMET = credenciais.get("inmet", {}).get("token", "")
+            
+            if CHAVE_API_OPENWEATHER:
+                logger.info("Chave API OpenWeather carregada com sucesso")
+            else:
+                logger.warning("Chave API OpenWeather não encontrada no arquivo de credenciais")
+                
+            if TOKEN_INMET:
+                logger.info("Token INMET carregado com sucesso")
+            else:
+                logger.warning("Token INMET não encontrado no arquivo de credenciais")
+    except Exception as e:
+        logger.warning(f"Erro ao carregar arquivo de credenciais: {e}")
+        logger.warning("Algumas funcionalidades podem não funcionar corretamente sem credenciais")
+else:
+    logger.warning(f"Arquivo de credenciais não encontrado: {arquivo_credenciais}")
+    logger.warning("Crie um arquivo 'credenciais.json' no diretório config/ com suas chaves de API")
 
 # Carregar regiões agrícolas do arquivo de configuração
 try:
     with open(DIRETORIO_CONFIG / "regioes.json", "r", encoding="utf-8") as arquivo_regioes:
-        import json
         config_regioes = json.load(arquivo_regioes)
         REGIOES_AGRICOLAS = config_regioes.get("regioes_agricolas", [])
         logger.info(f"Carregadas {len(REGIOES_AGRICOLAS)} regiões do arquivo de configuração")
@@ -107,9 +124,11 @@ except Exception as e:
     ]
 
 # Constantes de Configuração
-MAX_TENTATIVAS = 3
-ATRASO_TENTATIVA = 5  # segundos
-ANOS_HISTORICO = 15
+MAX_TENTATIVAS = 3        # Número máximo de tentativas para requisições de API
+ATRASO_TENTATIVA = 5      # Segundos entre tentativas
+ANOS_HISTORICO = 15       # Anos de dados históricos a coletar
+DIAS_DADOS_RECENTES = 7   # Dias de dados recentes a buscar
+PERIODO_PESQUISA_INMET = 5 # Anos máximos para busca de dados horários INMET
 
 
 class ColetorDadosClimaticos:
@@ -121,21 +140,32 @@ class ColetorDadosClimaticos:
         """Inicializa o coletor de dados climáticos."""
         logger.info("Inicializando o sistema de coleta de dados climáticos")
         # Verificar credenciais
-        if CHAVE_API_OPENWEATHER == "sua_api_key_aqui":
+        if not CHAVE_API_OPENWEATHER:
             logger.warning("ATENÇÃO: API Key do OpenWeather não configurada")
-        if TOKEN_INMET == "seu_token_aqui":
+        if not TOKEN_INMET and INMET_DISPONIVEL:
             logger.warning("ATENÇÃO: Token do INMET não configurado")
     
-    def coletar_para_todas_regioes(self, modo="atual"):
+    def coletar_para_todas_regioes(self, modo="atual", regioes_especificas=None):
         """
-        Coleta dados para todas as regiões configuradas.
+        Coleta dados para todas as regiões configuradas ou apenas para as regiões especificadas.
         
         Args:
             modo (str): "atual" para dados dos últimos 7 dias, "historico" para dados históricos
+            regioes_especificas (list): Lista opcional de nomes de regiões específicas para coletar
         """
         logger.info(f"Iniciando coleta no modo: {modo}")
         
-        for regiao in REGIOES_AGRICOLAS:
+        # Filtrar regiões se forem especificadas
+        regioes_a_processar = REGIOES_AGRICOLAS
+        if regioes_especificas:
+            regioes_a_processar = [r for r in REGIOES_AGRICOLAS if r['nome'] in regioes_especificas]
+            logger.info(f"Coleta limitada a {len(regioes_a_processar)} regiões específicas: {', '.join([r['nome'] for r in regioes_a_processar])}")
+            
+            if not regioes_a_processar:
+                logger.warning(f"Nenhuma das regiões especificadas foi encontrada na configuração. Verifique os nomes.")
+                return
+        
+        for regiao in regioes_a_processar:
             logger.info(f"Processando região: {regiao['nome']}")
             
             sucesso = False
@@ -385,52 +415,51 @@ class ColetorDadosClimaticos:
         """
         codigo_estacao = regiao['estacao_inmet']
         
-        # Usando try/import para não quebrar se a biblioteca não estiver instalada
-        try:
-            from inmetpy import INMET
-            inmet = INMET()  # Se tiver token: inmet = INMET(token=TOKEN_INMET)
-            
-            for tentativa in range(MAX_TENTATIVAS):
-                try:
-                    logger.debug(f"Tentativa {tentativa+1} para INMET atual: estação {codigo_estacao}")
-                    
-                    # Obter dados horários
-                    dados_horarios = inmet.hourly_data(station_code=codigo_estacao)
-                    
-                    if dados_horarios is not None and not dados_horarios.empty:
-                        # Filtrar apenas os dados dos últimos 7 dias
-                        sete_dias_atras = datetime.now() - timedelta(days=7)
-                        if 'DATETIME' in dados_horarios.columns:
-                            dados_horarios['DATETIME'] = pd.to_datetime(dados_horarios['DATETIME'])
-                            dados_recentes = dados_horarios[dados_horarios['DATETIME'] >= sete_dias_atras]
-                        else:
-                            dados_recentes = dados_horarios  # Se não tiver coluna de data, usa todos os dados
-                        
-                        # Adicionar metadados da região
-                        dados_recentes['fonte'] = 'inmet'
-                        dados_recentes['regiao'] = regiao['nome']
-                        dados_recentes['latitude'] = regiao['latitude']
-                        dados_recentes['longitude'] = regiao['longitude']
-                        
-                        return dados_recentes
-                    
-                    logger.warning(f"INMET retornou dados vazios para estação {codigo_estacao}")
-                    if tentativa < MAX_TENTATIVAS - 1:
-                        time.sleep(ATRASO_TENTATIVA)
-                    else:
-                        return None
-                        
-                except Exception as e:
-                    logger.warning(f"Erro na tentativa {tentativa+1} para INMET: {e}")
-                    if tentativa < MAX_TENTATIVAS - 1:
-                        time.sleep(ATRASO_TENTATIVA * (tentativa + 1))  # Backoff exponencial
-                    else:
-                        logger.error(f"Falha após {MAX_TENTATIVAS} tentativas com INMET")
-                        return None
-        
-        except ImportError:
+        # Verificar se a biblioteca INMET está disponível
+        if not INMET_DISPONIVEL:
             logger.error("Biblioteca inmetpy não instalada. Não é possível acessar dados do INMET.")
             return None
+            
+        # Inicializar cliente INMET
+        inmet = INMET(token=TOKEN_INMET) if TOKEN_INMET else INMET()
+        
+        for tentativa in range(MAX_TENTATIVAS):
+            try:
+                logger.debug(f"Tentativa {tentativa+1} para INMET atual: estação {codigo_estacao}")
+                
+                # Obter dados horários
+                dados_horarios = inmet.hourly_data(station_code=codigo_estacao)
+                
+                if dados_horarios is not None and not dados_horarios.empty:
+                    # Filtrar apenas os dados dos últimos dias configurados
+                    dias_atras = datetime.now() - timedelta(days=DIAS_DADOS_RECENTES)
+                    if 'DATETIME' in dados_horarios.columns:
+                        dados_horarios['DATETIME'] = pd.to_datetime(dados_horarios['DATETIME'])
+                        dados_recentes = dados_horarios[dados_horarios['DATETIME'] >= dias_atras]
+                    else:
+                        dados_recentes = dados_horarios  # Se não tiver coluna de data, usa todos os dados
+                    
+                    # Adicionar metadados da região
+                    dados_recentes['fonte'] = 'inmet'
+                    dados_recentes['regiao'] = regiao['nome']
+                    dados_recentes['latitude'] = regiao['latitude']
+                    dados_recentes['longitude'] = regiao['longitude']
+                    
+                    return dados_recentes
+                
+                logger.warning(f"INMET retornou dados vazios para estação {codigo_estacao}")
+                if tentativa < MAX_TENTATIVAS - 1:
+                    time.sleep(ATRASO_TENTATIVA)
+                else:
+                    return None
+                    
+            except Exception as e:
+                logger.warning(f"Erro na tentativa {tentativa+1} para INMET: {e}")
+                if tentativa < MAX_TENTATIVAS - 1:
+                    time.sleep(ATRASO_TENTATIVA * (tentativa + 1))  # Backoff exponencial
+                else:
+                    logger.error(f"Falha após {MAX_TENTATIVAS} tentativas com INMET")
+                    return None
     
     def coletar_inmet_historico(self, regiao):
         """
@@ -444,168 +473,168 @@ class ColetorDadosClimaticos:
         """
         codigo_estacao = regiao['estacao_inmet']
         
-        try:
-            from inmetpy import INMET
-            inmet = INMET()  # Se tiver token: inmet = INMET(token=TOKEN_INMET)
-            
-            # Lista para armazenar todos os dados coletados
-            todos_dados = []
-            
-            # Calcular datas para coleta (últimos 15 anos)
-            data_fim = datetime.now()
-            data_inicio = data_fim.replace(year=data_fim.year - ANOS_HISTORICO)
-            
-            logger.info(f"Iniciando coleta de {ANOS_HISTORICO} anos de dados históricos do INMET para {regiao['nome']}")
-            logger.info(f"Período: {data_inicio.strftime('%Y-%m-%d')} até {data_fim.strftime('%Y-%m-%d')}")
-            
-            try:
-                # Verificar se a biblioteca inmetpy suporta coleta de dados históricos
-                # A implementação depende dos recursos disponíveis na biblioteca
-                if hasattr(inmet, 'daily_data'):
-                    # Alguns casos a API do INMET limita a quantidade de dados por requisição
-                    # Vamos dividir em chunks anuais
-                    data_atual = data_inicio
-                    
-                    while data_atual < data_fim:
-                        # Calcular próximo período (1 ano ou até data fim, o que for menor)
-                        proximo_periodo = min(
-                            data_atual.replace(year=data_atual.year + 1),
-                            data_fim
-                        )
-                        
-                        data_inicio_str = data_atual.strftime("%Y-%m-%d")
-                        data_fim_str = proximo_periodo.strftime("%Y-%m-%d")
-                        
-                        logger.info(f"Coletando dados diários INMET para {regiao['nome']} - período: {data_inicio_str} a {data_fim_str}")
-                        
-                        # Tentar obter dados diários
-                        try:
-                            dados_diarios = inmet.daily_data(
-                                station_code=codigo_estacao,
-                                start_date=data_inicio_str,
-                                end_date=data_fim_str
-                            )
-                            
-                            if dados_diarios is not None and not dados_diarios.empty:
-                                # Adicionar metadados da região
-                                dados_diarios['fonte'] = 'inmet'
-                                dados_diarios['regiao'] = regiao['nome']
-                                dados_diarios['latitude'] = regiao['latitude']
-                                dados_diarios['longitude'] = regiao['longitude']
-                                
-                                # Adicionar ao conjunto total
-                                todos_dados.append(dados_diarios)
-                                logger.info(f"Coletados {len(dados_diarios)} registros diários INMET para {regiao['nome']} - período {data_inicio_str} a {data_fim_str}")
-                            else:
-                                logger.warning(f"Sem dados diários INMET para {regiao['nome']} no período {data_inicio_str} a {data_fim_str}")
-                        
-                        except Exception as e:
-                            logger.error(f"Erro ao coletar dados diários INMET para {regiao['nome']} - período {data_inicio_str} a {data_fim_str}: {e}")
-                        
-                        # Avançar para o próximo período
-                        data_atual = proximo_periodo
-                        
-                        # Aguardar entre requisições para evitar sobrecarga
-                        time.sleep(1)
-                
-                elif hasattr(inmet, 'historical_data'):
-                    # Alternativa se a biblioteca tiver outro método para dados históricos
-                    logger.info(f"Tentando método historical_data para {regiao['nome']}")
-                    
-                    data_inicio_str = data_inicio.strftime("%Y-%m-%d")
-                    data_fim_str = data_fim.strftime("%Y-%m-%d")
-                    
-                    dados_historicos = inmet.historical_data(
-                        station_code=codigo_estacao,
-                        start_date=data_inicio_str,
-                        end_date=data_fim_str
-                    )
-                    
-                    if dados_historicos is not None and not dados_historicos.empty:
-                        # Adicionar metadados da região
-                        dados_historicos['fonte'] = 'inmet'
-                        dados_historicos['regiao'] = regiao['nome']
-                        dados_historicos['latitude'] = regiao['latitude']
-                        dados_historicos['longitude'] = regiao['longitude']
-                        
-                        todos_dados.append(dados_historicos)
-                        logger.info(f"Coletados {len(dados_historicos)} registros históricos INMET para {regiao['nome']}")
-                    else:
-                        logger.warning(f"Sem dados históricos INMET para {regiao['nome']}")
-                
-                else:
-                    # Se não houver método específico para dados históricos
-                    logger.warning(f"A biblioteca inmetpy não tem métodos para dados históricos. Tentando alternativa.")
-                    
-                    # Podemos tentar usar o método de dados horários com datas específicas se disponível
-                    if hasattr(inmet, 'hourly_data_for_date'):
-                        # Coletar dados mês a mês para os últimos anos
-                        # Limitando a quantidade para não sobrecarregar
-                        anos_coleta = min(5, ANOS_HISTORICO)  # Coletamos no máximo 5 anos de dados horários
-                        
-                        data_atual = data_fim.replace(year=data_fim.year - anos_coleta)
-                        
-                        while data_atual < data_fim:
-                            # Avança mês a mês
-                            mes_atual = data_atual.month
-                            ano_atual = data_atual.year
-                            
-                            data_mes_str = f"{ano_atual}-{mes_atual:02d}-01"
-                            logger.info(f"Coletando dados horários INMET para {regiao['nome']} - mês: {data_mes_str}")
-                            
-                            try:
-                                dados_horarios = inmet.hourly_data_for_date(
-                                    station_code=codigo_estacao,
-                                    date=data_mes_str
-                                )
-                                
-                                if dados_horarios is not None and not dados_horarios.empty:
-                                    # Adicionar metadados da região
-                                    dados_horarios['fonte'] = 'inmet'
-                                    dados_horarios['regiao'] = regiao['nome']
-                                    dados_horarios['latitude'] = regiao['latitude']
-                                    dados_horarios['longitude'] = regiao['longitude']
-                                    
-                                    todos_dados.append(dados_horarios)
-                                    logger.info(f"Coletados {len(dados_horarios)} registros horários INMET para {regiao['nome']} - mês {data_mes_str}")
-                                else:
-                                    logger.warning(f"Sem dados horários INMET para {regiao['nome']} no mês {data_mes_str}")
-                            
-                            except Exception as e:
-                                logger.error(f"Erro ao coletar dados horários INMET para {regiao['nome']} - mês {data_mes_str}: {e}")
-                            
-                            # Avançar para o próximo mês
-                            if mes_atual == 12:
-                                data_atual = data_atual.replace(year=ano_atual + 1, month=1)
-                            else:
-                                data_atual = data_atual.replace(month=mes_atual + 1)
-                            
-                            # Aguardar entre requisições
-                            time.sleep(1)
-                    else:
-                        logger.error(f"Não foi possível encontrar método adequado na biblioteca inmetpy para dados históricos")
-            
-            except Exception as e:
-                logger.error(f"Erro geral ao coletar dados históricos INMET: {e}")
-            
-            # Verificar se coletamos algum dado
-            if not todos_dados:
-                logger.warning(f"Nenhum dado histórico do INMET coletado para {regiao['nome']}")
-                return pd.DataFrame()
-            
-            # Combinar todos os DataFrames coletados
-            dados_combinados = pd.concat(todos_dados, ignore_index=True)
-            
-            # Remover possíveis duplicatas (por data/hora)
-            if 'DATETIME' in dados_combinados.columns:
-                dados_combinados = dados_combinados.drop_duplicates(subset=['DATETIME'])
-            
-            logger.info(f"Total de {len(dados_combinados)} registros históricos do INMET coletados para {regiao['nome']}")
-            return dados_combinados
-            
-        except ImportError:
+        # Verificar se a biblioteca INMET está disponível
+        if not INMET_DISPONIVEL:
             logger.error("Biblioteca inmetpy não instalada. Não é possível acessar dados do INMET.")
             return None
+            
+        # Inicializar cliente INMET
+        inmet = INMET(token=TOKEN_INMET) if TOKEN_INMET else INMET()
+        
+        # Lista para armazenar todos os dados coletados
+        todos_dados = []
+        
+        # Calcular datas para coleta (últimos 15 anos)
+        data_fim = datetime.now()
+        data_inicio = data_fim.replace(year=data_fim.year - ANOS_HISTORICO)
+        
+        logger.info(f"Iniciando coleta de {ANOS_HISTORICO} anos de dados históricos do INMET para {regiao['nome']}")
+        logger.info(f"Período: {data_inicio.strftime('%Y-%m-%d')} até {data_fim.strftime('%Y-%m-%d')}")
+        
+        try:
+            # Verificar se a biblioteca inmetpy suporta coleta de dados históricos
+            # A implementação depende dos recursos disponíveis na biblioteca
+            if hasattr(inmet, 'daily_data'):
+                # Alguns casos a API do INMET limita a quantidade de dados por requisição
+                # Vamos dividir em chunks anuais
+                data_atual = data_inicio
+                
+                while data_atual < data_fim:
+                    # Calcular próximo período (1 ano ou até data fim, o que for menor)
+                    proximo_periodo = min(
+                        data_atual.replace(year=data_atual.year + 1),
+                        data_fim
+                    )
+                    
+                    data_inicio_str = data_atual.strftime("%Y-%m-%d")
+                    data_fim_str = proximo_periodo.strftime("%Y-%m-%d")
+                    
+                    logger.info(f"Coletando dados diários INMET para {regiao['nome']} - período: {data_inicio_str} a {data_fim_str}")
+                    
+                    # Tentar obter dados diários
+                    try:
+                        dados_diarios = inmet.daily_data(
+                            station_code=codigo_estacao,
+                            start_date=data_inicio_str,
+                            end_date=data_fim_str
+                        )
+                        
+                        if dados_diarios is not None and not dados_diarios.empty:
+                            # Adicionar metadados da região
+                            dados_diarios['fonte'] = 'inmet'
+                            dados_diarios['regiao'] = regiao['nome']
+                            dados_diarios['latitude'] = regiao['latitude']
+                            dados_diarios['longitude'] = regiao['longitude']
+                            
+                            # Adicionar ao conjunto total
+                            todos_dados.append(dados_diarios)
+                            logger.info(f"Coletados {len(dados_diarios)} registros diários INMET para {regiao['nome']} - período {data_inicio_str} a {data_fim_str}")
+                        else:
+                            logger.warning(f"Sem dados diários INMET para {regiao['nome']} no período {data_inicio_str} a {data_fim_str}")
+                    
+                    except Exception as e:
+                        logger.error(f"Erro ao coletar dados diários INMET para {regiao['nome']} - período {data_inicio_str} a {data_fim_str}: {e}")
+                    
+                    # Avançar para o próximo período
+                    data_atual = proximo_periodo
+                    
+                    # Aguardar entre requisições para evitar sobrecarga
+                    time.sleep(1)
+            
+            elif hasattr(inmet, 'historical_data'):
+                # Alternativa se a biblioteca tiver outro método para dados históricos
+                logger.info(f"Tentando método historical_data para {regiao['nome']}")
+                
+                data_inicio_str = data_inicio.strftime("%Y-%m-%d")
+                data_fim_str = data_fim.strftime("%Y-%m-%d")
+                
+                dados_historicos = inmet.historical_data(
+                    station_code=codigo_estacao,
+                    start_date=data_inicio_str,
+                    end_date=data_fim_str
+                )
+                
+                if dados_historicos is not None and not dados_historicos.empty:
+                    # Adicionar metadados da região
+                    dados_historicos['fonte'] = 'inmet'
+                    dados_historicos['regiao'] = regiao['nome']
+                    dados_historicos['latitude'] = regiao['latitude']
+                    dados_historicos['longitude'] = regiao['longitude']
+                    
+                    todos_dados.append(dados_historicos)
+                    logger.info(f"Coletados {len(dados_historicos)} registros históricos INMET para {regiao['nome']}")
+                else:
+                    logger.warning(f"Sem dados históricos INMET para {regiao['nome']}")
+            
+            else:
+                # Se não houver método específico para dados históricos
+                logger.warning(f"A biblioteca inmetpy não tem métodos para dados históricos. Tentando alternativa.")
+                
+                # Podemos tentar usar o método de dados horários com datas específicas se disponível
+                if hasattr(inmet, 'hourly_data_for_date'):
+                    # Coletar dados mês a mês para os últimos anos
+                    # Limitando a quantidade para não sobrecarregar
+                    anos_coleta = min(PERIODO_PESQUISA_INMET, ANOS_HISTORICO)  # Limitamos a quantidade de dados horários
+                    
+                    data_atual = data_fim.replace(year=data_fim.year - anos_coleta)
+                    
+                    while data_atual < data_fim:
+                        # Avança mês a mês
+                        mes_atual = data_atual.month
+                        ano_atual = data_atual.year
+                        
+                        data_mes_str = f"{ano_atual}-{mes_atual:02d}-01"
+                        logger.info(f"Coletando dados horários INMET para {regiao['nome']} - mês: {data_mes_str}")
+                        
+                        try:
+                            dados_horarios = inmet.hourly_data_for_date(
+                                station_code=codigo_estacao,
+                                date=data_mes_str
+                            )
+                            
+                            if dados_horarios is not None and not dados_horarios.empty:
+                                # Adicionar metadados da região
+                                dados_horarios['fonte'] = 'inmet'
+                                dados_horarios['regiao'] = regiao['nome']
+                                dados_horarios['latitude'] = regiao['latitude']
+                                dados_horarios['longitude'] = regiao['longitude']
+                                
+                                todos_dados.append(dados_horarios)
+                                logger.info(f"Coletados {len(dados_horarios)} registros horários INMET para {regiao['nome']} - mês {data_mes_str}")
+                            else:
+                                logger.warning(f"Sem dados horários INMET para {regiao['nome']} no mês {data_mes_str}")
+                        
+                        except Exception as e:
+                            logger.error(f"Erro ao coletar dados horários INMET para {regiao['nome']} - mês {data_mes_str}: {e}")
+                        
+                        # Avançar para o próximo mês
+                        if mes_atual == 12:
+                            data_atual = data_atual.replace(year=ano_atual + 1, month=1)
+                        else:
+                            data_atual = data_atual.replace(month=mes_atual + 1)
+                        
+                        # Aguardar entre requisições
+                        time.sleep(1)
+                else:
+                    logger.error(f"Não foi possível encontrar método adequado na biblioteca inmetpy para dados históricos")
+        
+        except Exception as e:
+            logger.error(f"Erro geral ao coletar dados históricos INMET: {e}")
+        
+        # Verificar se coletamos algum dado
+        if not todos_dados:
+            logger.warning(f"Nenhum dado histórico do INMET coletado para {regiao['nome']}")
+            return pd.DataFrame()
+        
+        # Combinar todos os DataFrames coletados
+        dados_combinados = pd.concat(todos_dados, ignore_index=True)
+        
+        # Remover possíveis duplicatas (por data/hora)
+        if 'DATETIME' in dados_combinados.columns:
+            dados_combinados = dados_combinados.drop_duplicates(subset=['DATETIME'])
+        
+        logger.info(f"Total de {len(dados_combinados)} registros históricos do INMET coletados para {regiao['nome']}")
+        return dados_combinados
     
     def salvar_dados(self, dados, nome_regiao, fonte, modo):
         """
