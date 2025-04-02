@@ -1,0 +1,32 @@
+{
+  "regioes_agricolas": [
+    {
+      "nome": "Ribeirao_Preto_SP",
+      "descricao": "Região de Ribeirão Preto - SP (Cana-de-açúcar)",
+      "latitude": -21.17,
+      "longitude": -47.81,
+      "estacao_inmet": "A711"
+    },
+    {
+      "nome": "Brasilia_DF",
+      "descricao": "Região de Brasília - DF (Soja e Milho)",
+      "latitude": -15.78,
+      "longitude": -47.93,
+      "estacao_inmet": "A001"
+    },
+    {
+      "nome": "Sorriso_MT",
+      "descricao": "Região de Sorriso - MT (Soja)",
+      "latitude": -12.55,
+      "longitude": -55.71,
+      "estacao_inmet": "A924"
+    },
+    {
+      "nome": "Petrolina_PE",
+      "descricao": "Região do Vale do São Francisco - PE (Frutas)",
+      "latitude": -9.38,
+      "longitude": -40.48,
+      "estacao_inmet": "A307"
+    }
+  ]
+}
