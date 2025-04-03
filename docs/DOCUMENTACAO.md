@@ -1,599 +1,481 @@
-# Documentação do Sistema de Coleta de Dados Climáticos
+# Manual do Usuário - Sistema de Dados Climáticos
 
-## Visão Geral
-
-O Sistema de Coleta de Dados Climáticos é uma solução desenvolvida para automatizar a obtenção, armazenamento e análise de dados meteorológicos de múltiplas fontes. O sistema utiliza a API OpenWeather como fonte principal e a API do INMET (Instituto Nacional de Meteorologia do Brasil) como backup, garantindo resiliência e continuidade na coleta de dados.
-
-Esta documentação fornece instruções detalhadas sobre instalação, configuração, uso e manutenção do sistema para usuários e administradores.
+![Versão](https://img.shields.io/badge/versão-1.0.0-green)
 
 ## Índice
 
-1. [Objetivo e Funcionalidades](#objetivo-e-funcionalidades)
-2. [Requisitos do Sistema](#requisitos-do-sistema)
-3. [Instalação](#instalação)
-4. [Estrutura do Sistema](#estrutura-do-sistema)
-5. [Interface de Linha de Comando](#interface-de-linha-de-comando)
-6. [Configuração](#configuração)
-7. [Uso do Sistema](#uso-do-sistema)
-8. [Análise de Dados](#análise-de-dados)
-9. [Automação de Coleta](#automação-de-coleta)
-10. [Solução de Problemas](#solução-de-problemas)
-11. [FAQ](#faq)
+1. [Introdução](#introdução)
+2. [Primeiros Passos](#primeiros-passos)
+   - [Instalação](#instalação)
+   - [Configuração Inicial](#configuração-inicial)
+   - [Verificação do Sistema](#verificação-do-sistema)
+3. [Usando o Sistema](#usando-o-sistema)
+   - [Interface Principal](#interface-principal)
+   - [Menu de Coleta de Dados](#menu-de-coleta-de-dados)
+   - [Menu de Consulta e Análise](#menu-de-consulta-e-análise)
+   - [Menu de Gerenciamento de Regiões](#menu-de-gerenciamento-de-regiões)
+   - [Menu de Exportação](#menu-de-exportação)
+   - [Menu de Logs](#menu-de-logs)
+   - [Menu de Configurações](#menu-de-configurações)
+4. [Uso em Linha de Comando](#uso-em-linha-de-comando)
+5. [Automação de Coleta](#automação-de-coleta)
+6. [Perguntas Frequentes](#perguntas-frequentes)
+7. [Solução de Problemas](#solução-de-problemas)
+8. [Suporte e Contato](#suporte-e-contato)
 
-## Objetivo e Funcionalidades
+## Introdução
 
-### Objetivo
+O Sistema de Dados Climáticos é uma ferramenta para coleta, armazenamento e análise de dados meteorológicos de múltiplas fontes. Foi desenvolvido especialmente para suportar modelos preditivos de demanda agrícola, fornecendo dados confiáveis sobre temperatura, precipitação, umidade e outras variáveis climáticas.
 
-Fornecer uma plataforma robusta para coleta automática de dados climáticos de múltiplas regiões agrícolas brasileiras, para apoiar modelos preditivos de demanda de insumos agrícolas que consideram variáveis climáticas como fatores de influência.
+### Para quem é este sistema?
 
-### Principais Funcionalidades
+- **Analistas Agrícolas**: Para análise de impacto climático em safras
+- **Pesquisadores**: Para estudos de correlação entre clima e produtividade
+- **Gestores Agrícolas**: Para planejamento baseado em dados meteorológicos
+- **Desenvolvedores de Modelos Preditivos**: Para obtenção organizada de dados históricos
 
-- **Coleta de Dados Atuais**: Obtenção de dados meteorológicos dos últimos 7 dias, com atualizações diárias.
-- **Coleta de Dados Históricos**: Acesso a até 15 anos de dados climáticos históricos para análises de longo prazo.
-- **Sistema de Failover Automático**: Transição automática para a API secundária (INMET) caso a principal (OpenWeather) falhe.
-- **Validação de Dados**: Verificação de consistência e integridade dos dados coletados.
-- **Prevenção de Duplicação**: Mecanismos para evitar armazenamento duplicado de informações.
-- **Estrutura Organizacional**: Dados armazenados em formato estruturado, organizados por fonte, região, ano e mês.
-- **Interface de Linha de Comando**: CLI completo para interação com todas as funcionalidades do sistema.
-- **Ferramentas de Análise**: Scripts para visualização e análise estatística dos dados coletados.
-- **Gestão de Regiões**: Configuração externa e flexível de regiões monitoradas.
+### Principais recursos
 
-## Requisitos do Sistema
+- Coleta automática de dados de múltiplas fontes (OpenWeather e INMET)
+- Sistema de failover para garantir a continuidade dos dados
+- Organização dos dados por região, data e fonte
+- Visualizações gráficas e análises estatísticas
+- Exportação em formatos compatíveis com ferramentas de análise
+- Interface amigável por linha de comando (CLI)
 
-### Hardware Recomendado
+## Primeiros Passos
 
-- Processador: 2 GHz dual-core ou superior
-- Memória RAM: 4GB ou superior (8GB recomendado para processamento de grandes volumes históricos)
-- Espaço em Disco: Mínimo de 5GB livres para instalação e dados (mais espaço pode ser necessário dependendo da quantidade de regiões e período histórico)
-- Conexão à Internet: Estável, mínimo 1 Mbps
+### Instalação
 
-### Software Necessário
+#### Instalação Automática (Recomendada)
 
-- Python 3.7 ou superior
-- Sistema operacional: Windows 10/11, macOS 10.14+, ou Linux (Ubuntu 18.04+, Debian 10+, CentOS 7+)
-- Gerenciador de pacotes pip
+1. Certifique-se de que seu sistema atende aos requisitos:
+   - Python 3.7 ou superior
+   - pip (gerenciador de pacotes Python)
+   - 5GB de espaço em disco para armazenar dados históricos
+   - Conexão à internet
 
-### Dependências Python
-
-Todas as dependências estão listadas no arquivo `requisitos.txt`:
-
-- requests: Para requisições HTTP às APIs
-- pandas: Para manipulação e análise de dados
-- matplotlib: Para geração de gráficos
-- numpy: Para operações numéricas
-- seaborn: Para visualizações estatísticas avançadas
-- colorama: Para interface colorida no terminal
-- tabulate: Para formatação de tabelas no terminal
-- inmetpy (opcional): Para acesso à API do INMET
-
-## Instalação
-
-### Instalação Manual
-
-1. **Clone o repositório**:
+2. Execute o script de instalação automatizada:
    ```bash
-   git clone https://github.com/seuusuario/sistema_dados_climaticos.git
-   cd sistema_dados_climaticos
+   chmod +x instalar.sh
+   ./instalar.sh
    ```
 
-2. **Instale as dependências**:
+   O script realizará:
+   - Verificação de requisitos
+   - Instalação de dependências
+   - Criação de diretórios necessários
+   - Configuração básica do ambiente
+
+#### Instalação Manual
+
+1. Instale as dependências Python:
    ```bash
    pip install -r requisitos.txt
    ```
 
-3. **Verifique a instalação**:
+2. Crie os diretórios necessários (caso não existam):
+   ```bash
+   mkdir -p dados/openweather dados/inmet logs config temp
+   ```
+
+3. Verifique a instalação:
    ```bash
    python cli.py
    ```
 
-### Instalação Automatizada
+### Configuração Inicial
 
-Execute o script de instalação que configura o ambiente completo:
+Após a instalação, você precisará configurar:
 
-```bash
-chmod +x instalar.sh
-./instalar.sh
-```
+#### 1. Credenciais de API
 
-O script realizará as seguintes tarefas:
-- Verificar requisitos do sistema
-- Criar um ambiente virtual Python
-- Instalar todas as dependências
-- Configurar diretórios de dados e logs
-- Guiar na configuração de chaves de API
-- Oferecer configuração opcional de execução automatizada
+Para configurar as chaves de API necessárias:
 
-## Estrutura do Sistema
-
-### Estrutura de Diretórios
-
-```
-sistema_dados_climaticos/
-├── cli.py                  # Interface de linha de comando
-├── src/                    # Código-fonte
-│   ├── coletor_climatico.py
-│   ├── analisador_dados.py
-│   ├── exemplo_analise.py
-│   └── executar_coleta.py
-├── config/                 # Arquivos de configuração
-│   ├── regioes.json
-│   └── credenciais.json
-├── dados/                  # Dados coletados
-│   ├── openweather/
-│   │   └── AAAA/MM/        # Organizados por ano/mês
-│   └── inmet/
-│       └── AAAA/MM/        # Organizados por ano/mês 
-├── logs/                   # Logs de execução
-│   └── AAAA/MM/            # Organizados por ano/mês
-├── docs/                   # Documentação
-│   └── DOCUMENTACAO.md
-├── temp/                   # Arquivos temporários
-├── requisitos.txt          # Dependências
-├── README.md               # Documentação resumida
-└── instalar.sh             # Script de instalação
-```
-
-### Componentes Principais
-
-- **cli.py**: Interface de linha de comando interativa
-- **coletor_climatico.py**: Núcleo do sistema com a lógica de coleta
-- **analisador_dados.py**: Funções para análise básica dos dados
-- **exemplo_analise.py**: Interface interativa para análises avançadas
-
-### Organização de Dados e Logs
-
-Tanto os dados coletados quanto os logs são organizados em uma estrutura hierárquica:
-
-1. **Dados**:
+1. Execute o CLI e acesse o menu de configurações:
+   ```bash
+   python cli.py
    ```
-   dados/
-   ├── openweather/         # Fonte primária
-   │   └── 2025/            # Ano
-   │       └── 04/          # Mês (04 = abril)
-   │           ├── atual_Ribeirao_Preto_SP_20250402.csv
-   │           └── historico_Sao_Paulo_SP_20250402.csv
-   ├── inmet/               # Fonte secundária (backup)
-       └── 2025/            # Ano
-           └── 04/          # Mês
-               └── ...
-   ```
+   
+2. Selecione: **Configurações** > **Configurar credenciais de API**
 
-2. **Logs**:
-   ```
-   logs/
-   └── 2025/                # Ano
-       └── 04/              # Mês
-           ├── coletor_20250402.log
-           ├── execucao_20250402_123045.log
-           └── cli_20250402.log
-   ```
+3. Insira sua chave API do OpenWeather (obrigatória) e token do INMET (opcional)
 
-Esta estrutura facilita:
-- Organização cronológica dos dados
-- Rotação e limpeza de logs antigos
-- Backup seletivo de períodos específicos
+**Onde obter as chaves:**
+- **OpenWeather**: Crie uma conta em [openweathermap.org](https://openweathermap.org/api) e obtenha uma chave gratuita
+- **INMET**: Solicite acesso no site do [Instituto Nacional de Meteorologia](https://portal.inmet.gov.br/)
 
-## Interface de Linha de Comando
+#### 2. Regiões de Interesse
 
-### Modos de Operação
+O sistema permite gerenciar regiões para coleta de dados. Você pode:
 
-O CLI oferece dois modos de operação:
+1. Usar as regiões padrão já configuradas
+2. Adicionar novas regiões através do menu:
+   - Selecione: **Gerenciar Regiões** > **Adicionar nova região**
+   - Informe nome, coordenadas e código da estação INMET mais próxima
+3. Importar regiões de um arquivo CSV:
+   - Prepare um CSV com colunas: `nome,descricao,latitude,longitude,estacao_inmet`
+   - Selecione: **Gerenciar Regiões** > **Importar regiões de CSV**
 
-#### 1. Modo Interativo
+### Verificação do Sistema
 
-Inicie o modo interativo sem argumentos:
+Após a instalação e configuração, é recomendado verificar se o sistema está funcionando corretamente:
+
+1. Verifique os diretórios:
+   - No CLI, selecione: **Configurações** > **Verificar diretórios do sistema**
+   
+2. Teste a coleta de dados com uma região:
+   - Selecione: **Coleta de Dados** > **Coletar dados atuais**
+   
+3. Verifique se os dados foram coletados:
+   - Selecione: **Consulta e Análise** > **Listar regiões com dados disponíveis**
+
+## Usando o Sistema
+
+### Interface Principal
+
+O sistema apresenta uma interface interativa baseada em menus. Para iniciá-la, execute:
+
 ```bash
 python cli.py
 ```
 
-Este modo apresenta um menu completo com todas as funcionalidades do sistema, facilitando a navegação e uso.
+Você verá o menu principal com as seguintes opções:
 
-#### 2. Modo de Comando
+1. **Coleta de Dados**: Coletar dados atuais ou históricos
+2. **Consulta e Análise**: Visualizar e analisar dados coletados
+3. **Gerenciar Regiões**: Configurar regiões para coleta
+4. **Exportação de Dados**: Exportar dados em diversos formatos
+5. **Logs e Monitoramento**: Visualizar logs do sistema
+6. **Configurações**: Configurar APIs e verificar diretórios
+7. **Ajuda e Documentação**: Acessar documentação interativa
+0. **Sair**: Encerrar o programa
 
-Para automação ou uso em scripts:
+Navegue pelos menus digitando o número da opção desejada.
+
+### Menu de Coleta de Dados
+
+Neste menu, você pode coletar dados climáticos das regiões configuradas:
+
+1. **Coletar dados atuais**: Coleta dados dos últimos 7 dias
+   - Útil para análises de curto prazo e decisões imediatas
+   - Execução mais rápida (geralmente menos de 5 minutos)
+   
+2. **Coletar dados históricos**: Coleta dados de até 15 anos atrás
+   - Útil para análises de tendências e modelos preditivos
+   - Pode levar mais tempo (até 30 minutos dependendo do número de regiões)
+   
+3. **Coletar todos os dados**: Combina as duas opções anteriores
+   
+4. **Coletar dados para região específica**: Permite selecionar uma região específica
+   - Útil para atualizar apenas os dados de uma região de interesse
+   - Opção mais rápida quando você não precisa atualizar todas as regiões
+
+**Dicas de uso:**
+- A coleta atual é recomendada para execução diária
+- A coleta histórica pode ser executada semanalmente ou mensalmente
+- O sistema evita duplicação de dados, então é seguro executar coletas repetidamente
+
+### Menu de Consulta e Análise
+
+Este menu permite visualizar e analisar os dados coletados:
+
+1. **Listar regiões com dados disponíveis**: Mostra todas as regiões que possuem dados
+   
+2. **Visualizar dados de uma região**: Mostra estatísticas e gráficos para uma região específica
+   - Exibe temperaturas médias, mínimas e máximas
+   - Mostra estatísticas de umidade e precipitação
+   - Permite gerar gráficos interativos
+   
+3. **Visualizar dados históricos**: Similar à opção anterior, mas focada em dados históricos
+   
+4. **Análise avançada**: Abre uma interface interativa com opções avançadas de análise
+   - Correlações entre variáveis climáticas
+   - Visualizações personalizáveis
+   - Acesso a dados brutos
+   
+5. **Comparar regiões**: Permite comparar dados climáticos de duas regiões diferentes
+   - Útil para análises comparativas
+   - Exibe gráficos sobrepostos para fácil visualização
+
+**Exemplos de análises úteis:**
+- Compare a precipitação entre diferentes regiões produtoras
+- Verifique padrões de temperatura nos últimos meses
+- Correlacione umidade e precipitação para identificar padrões
+
+### Menu de Gerenciamento de Regiões
+
+Este menu permite configurar as regiões que serão monitoradas:
+
+1. **Listar regiões configuradas**: Mostra todas as regiões atualmente configuradas
+   
+2. **Adicionar nova região**: Permite adicionar uma nova região para monitoramento
+   - Você precisará fornecer:
+     - Nome da região (sem espaços, ex: Sao_Paulo_SP)
+     - Descrição (ex: Região de São Paulo - SP)
+     - Latitude e longitude
+     - Código da estação INMET mais próxima (opcional)
+   
+3. **Remover região**: Remove uma região da configuração
+   
+4. **Importar regiões de CSV**: Importa múltiplas regiões de um arquivo CSV
+   - O formato do CSV deve ter as colunas: nome, descricao, latitude, longitude, estacao_inmet
+   
+5. **Exportar regiões para CSV**: Exporta as regiões configuradas para um arquivo CSV
+
+**Como encontrar coordenadas geográficas:**
+- Use o Google Maps: clique com o botão direito no local desejado e selecione "O que há aqui?"
+- Use sites como [latlong.net](https://www.latlong.net/) para converter endereços em coordenadas
+
+**Como encontrar o código da estação INMET:**
+1. Acesse o [mapa de estações do INMET](https://mapas.inmet.gov.br/)
+2. Localize a estação automática mais próxima da região desejada
+3. Anote o código da estação (formato: A000)
+
+### Menu de Exportação
+
+Este menu permite exportar os dados coletados em diferentes formatos:
+
+1. **Exportar dados para CSV**: Exporta dados em formato CSV (compatível com Excel e outras ferramentas)
+   - Permite selecionar a região e o período desejado
+   - Formata os dados para fácil análise
+   
+2. **Exportar dados para Excel**: Exporta diretamente para formato Excel (.xlsx)
+   - Requer a biblioteca opcional openpyxl (incluída nos requisitos)
+   
+3. **Exportar gráficos**: Salva gráficos de temperatura, umidade e precipitação como imagens PNG
+   - Útil para relatórios e apresentações
+   - Alta qualidade para impressão
+
+**Opções de período para exportação:**
+- Última semana
+- Último mês
+- Últimos 3 meses
+- Último ano
+- Últimos 5 anos
+- Todos os dados disponíveis
+
+Por padrão, os arquivos são salvos na pasta Downloads do usuário.
+
+### Menu de Logs
+
+Este menu permite gerenciar os logs do sistema:
+
+1. **Visualizar logs do sistema**: Permite visualizar os registros de atividade
+   - Logs são organizados por data e tipo
+   - Cores diferentes identificam erros, avisos e informações
+   
+2. **Verificar estatísticas de coleta**: Mostra estatísticas sobre os dados coletados
+   - Quantidade de registros por região
+   - Distribuição de dados por fonte
+   
+3. **Limpar logs antigos**: Remove logs antigos para economizar espaço
+   - Opções para manter apenas logs recentes
+   - Ajuda a manter o sistema organizado
+
+Os logs são essenciais para diagnosticar problemas. Se encontrar algum erro, verifique os logs para mais detalhes.
+
+### Menu de Configurações
+
+Este menu permite ajustar as configurações do sistema:
+
+1. **Configurar credenciais de API**: Gerencia as chaves de API para OpenWeather e INMET
+   
+2. **Configurar frequência de coleta**: Exibe informações sobre como automatizar a coleta
+   
+3. **Verificar diretórios do sistema**: Verifica se todos os diretórios necessários existem e têm permissões corretas
+
+## Uso em Linha de Comando
+
+Além do modo interativo, o sistema pode ser usado diretamente na linha de comando, o que é útil para automação e scripts.
+
+### Comandos Principais
+
 ```bash
-# Coleta de dados atuais
+# Coleta de dados atuais para todas as regiões
 python cli.py coleta --modo atual
 
-# Coleta de dados históricos
+# Coleta de dados históricos para todas as regiões
 python cli.py coleta --modo historico
 
 # Coleta para regiões específicas
 python cli.py coleta --regioes Ribeirao_Preto_SP Brasilia_DF
 
+# Coleta com período personalizado
+python cli.py coleta --modo atual --dias 10
+
 # Iniciar análise interativa
 python cli.py analise
 
-# Mostrar ajuda
+# Mostrar ajuda do sistema
 python cli.py ajuda
 ```
 
-### Funcionalidades do CLI
+### Exemplos de Uso Avançado
 
-O CLI organiza as funcionalidades em menus para fácil acesso:
-
-1. **Coleta de Dados**
-   - Coletar dados atuais (últimos 7 dias)
-   - Coletar dados históricos
-   - Coletar todos os dados (atual + histórico)
-   - Coletar dados para região específica
-
-2. **Consulta e Análise**
-   - Listar regiões com dados disponíveis
-   - Visualizar dados de uma região
-   - Visualizar dados históricos
-   - Análise avançada (interface interativa)
-   - Comparar regiões
-
-3. **Gerenciar Regiões**
-   - Listar regiões configuradas
-   - Adicionar nova região
-   - Remover região
-   - Importar regiões de CSV
-   - Exportar regiões para CSV
-
-4. **Exportação de Dados**
-   - Exportar dados para CSV
-   - Exportar dados para Excel
-   - Exportar gráficos
-
-5. **Logs e Monitoramento**
-   - Visualizar logs do sistema
-   - Verificar estatísticas de coleta
-   - Limpar logs antigos
-
-6. **Configurações**
-   - Configurar credenciais de API
-   - Configurar frequência de coleta
-   - Verificar diretórios do sistema
-
-7. **Ajuda e Documentação**
-   - Visualização da documentação completa
-
-## Configuração
-
-### Credenciais de API
-
-O sistema armazena as credenciais das APIs no arquivo `config/credenciais.json`:
-
-```json
-{
-  "openweather": {
-    "api_key": "sua_api_key_aqui"
-  },
-  "inmet": {
-    "token": "seu_token_aqui"
-  }
-}
-```
-
-Você pode configurar as credenciais das seguintes formas:
-
-1. **Através do CLI**:
-   - Execute o CLI em modo interativo
-   - Selecione "Configurações" > "Configurar credenciais de API"
-   - Siga as instruções na tela
-
-2. **Editando o arquivo diretamente**:
-   - Abra o arquivo `config/credenciais.json` em um editor de texto
-   - Atualize os valores de `api_key` e `token`
-   - Salve o arquivo
-
-### Configuração de Regiões
-
-As regiões monitoradas são definidas no arquivo `config/regioes.json`:
-
-```json
-{
-  "regioes_agricolas": [
-    {
-      "nome": "Ribeirao_Preto_SP",
-      "descricao": "Região de Ribeirão Preto - SP (Cana-de-açúcar)",
-      "latitude": -21.17,
-      "longitude": -47.81,
-      "estacao_inmet": "A711"
-    },
-    {
-      "nome": "Brasilia_DF",
-      "descricao": "Região de Brasília - DF (Soja e Milho)",
-      "latitude": -15.78,
-      "longitude": -47.93,
-      "estacao_inmet": "A001"
-    }
-  ]
-}
-```
-
-### Gerenciamento de Regiões pelo CLI
-
-O CLI oferece várias opções para gerenciar regiões:
-
-1. **Adicionar Nova Região**:
-   - No menu principal, selecione "Gerenciar Regiões" > "Adicionar nova região"
-   - Forneça os dados solicitados: nome, descrição, coordenadas, código da estação INMET
-
-2. **Importar de CSV**:
-   Para importação em lote, crie um arquivo CSV com as colunas:
-   - nome: Identificador único sem espaços
-   - descricao: Descrição legível da região
-   - latitude: Valor decimal (ex: -21.17)
-   - longitude: Valor decimal (ex: -47.81)
-   - estacao_inmet: Código da estação INMET mais próxima
-
-   No CLI, selecione "Gerenciar Regiões" > "Importar regiões de CSV" e forneça o caminho do arquivo.
-
-### Encontrando Códigos de Estações INMET
-
-Para encontrar o código da estação INMET mais próxima:
-1. Acesse o [mapa de estações do INMET](https://mapas.inmet.gov.br/)
-2. Localize a estação automática mais próxima da região desejada
-3. Anote o código da estação (formato: A000)
-
-## Uso do Sistema
-
-### Coleta de Dados
-
-#### Coleta de Dados Atuais
-
-Para coletar dados meteorológicos dos últimos 7 dias:
-
-**Via CLI Interativo**:
-1. Execute `python cli.py`
-2. Selecione "Coleta de Dados" > "Coletar dados atuais"
-
-**Via Linha de Comando**:
 ```bash
-python cli.py coleta --modo atual
+# Coletar dados atuais para uma região específica, limitando a 3 dias
+python cli.py coleta --modo atual --regioes Petrolina_PE --dias 3
+
+# Coletar dados históricos para duas regiões, limitando a 5 anos
+python cli.py coleta --modo historico --regioes Ribeirao_Preto_SP Sorriso_MT --anos 5
+
+# Executar silenciosamente (sem saída no console)
+python cli.py coleta --modo atual > /dev/null 2>&1
 ```
-
-Opções adicionais:
-- `--regioes NOME1 NOME2` - Para coletar apenas regiões específicas
-- `--dias 10` - Ajustar o número de dias para coleta (1-30)
-
-#### Coleta de Dados Históricos
-
-Para coletar dados históricos (até 15 anos atrás):
-
-**Via CLI Interativo**:
-1. Execute `python cli.py`
-2. Selecione "Coleta de Dados" > "Coletar dados históricos"
-
-**Via Linha de Comando**:
-```bash
-python cli.py coleta --modo historico
-```
-
-Opções adicionais:
-- `--regioes NOME1 NOME2` - Para coletar apenas regiões específicas
-- `--anos 5` - Ajustar o número de anos de dados históricos (1-30)
-
-#### Coleta para Região Específica
-
-**Via CLI Interativo**:
-1. Execute `python cli.py`
-2. Selecione "Coleta de Dados" > "Coletar dados para região específica"
-3. Selecione a região desejada da lista apresentada
-
-**Via Linha de Comando**:
-```bash
-python cli.py coleta --regioes Ribeirao_Preto_SP --modo atual
-```
-
-### Visualização de Logs
-
-Os logs são organizados por ano e mês, seguindo uma estrutura hierárquica semelhante aos dados coletados:
-
-```
-logs/
-└── 2025/                # Ano
-    └── 04/              # Mês (04 = abril)
-        ├── coletor_20250402.log
-        ├── execucao_20250402_123045.log
-        └── cli_20250402.log
-```
-
-Esta organização facilita:
-- Localização de logs específicos por período
-- Manutenção e limpeza de logs antigos
-- Análise de problemas históricos
-
-**Via CLI Interativo**:
-1. Execute `python cli.py`
-2. Selecione "Logs e Monitoramento" > "Visualizar logs do sistema"
-3. Selecione o arquivo de log que deseja visualizar
-
-Também é possível acessar diretamente os arquivos de log navegando pela estrutura de diretórios:
-```
-logs/AAAA/MM/nome_do_log.log
-```
-
-Tipos de logs gerados pelo sistema:
-- `coletor_AAAAMMDD.log`: Logs do processo de coleta de dados
-- `execucao_AAAAMMDD_HHMMSS.log`: Logs de execução de coletas agendadas
-- `cli_AAAAMMDD.log`: Logs da interface de linha de comando
-
-### Limpeza de Logs Antigos
-
-Para manter o sistema organizado, o CLI oferece opções para limpeza de logs:
-
-1. Execute `python cli.py`
-2. Selecione "Logs e Monitoramento" > "Limpar logs antigos"
-3. Escolha uma das opções:
-   - Manter apenas os logs dos últimos 7 dias
-   - Manter apenas os logs do último mês
-   - Manter apenas os 10 logs mais recentes
-   - Limpar todos os logs
-
-## Análise de Dados
-
-### Analisador por Linha de Comando
-
-Para análises básicas e visualizações rápidas:
-
-**Via CLI Interativo**:
-1. Execute `python cli.py`
-2. Selecione "Consulta e Análise" > "Visualizar dados de uma região"
-3. Selecione a região desejada
-
-**Via Linha de Comando**:
-```bash
-# Listar regiões disponíveis
-python src/analisador_dados.py --listar-regioes
-
-# Visualizar temperatura de uma região
-python src/analisador_dados.py --regiao Ribeirao_Preto_SP --grafico temp
-
-# Visualizar todos os gráficos
-python src/analisador_dados.py --regiao Brasilia_DF --grafico todos
-```
-
-### Analisador Interativo
-
-Para análises mais detalhadas e exploratórias:
-
-**Via CLI Interativo**:
-1. Execute `python cli.py`
-2. Selecione "Consulta e Análise" > "Análise avançada (interface interativa)"
-
-**Via Linha de Comando**:
-```bash
-python cli.py analise
-# ou diretamente:
-python src/exemplo_analise.py
-```
-
-O analisador interativo oferece:
-- Seleção de região por menu
-- Escolha entre dados atuais ou históricos
-- Múltiplas visualizações (temperatura, precipitação, correlações)
-- Visualização de dados brutos
-- Estatísticas descritivas
-- Exportação de gráficos
-
-### Exportação de Dados
-
-O sistema permite exportar dados em diferentes formatos:
-
-**Via CLI Interativo**:
-1. Execute `python cli.py`
-2. Selecione "Exportação de Dados"
-3. Escolha o formato desejado:
-   - CSV
-   - Excel (requer instalação de openpyxl)
-   - Gráficos (PNG)
-
-Durante a exportação, você poderá selecionar:
-- A região desejada
-- O período de dados (última semana, mês, 3 meses, ano)
-- O diretório de destino
 
 ## Automação de Coleta
 
-### Usando Cron (Linux/Unix/Mac)
+Para garantir a coleta regular de dados, você pode automatizar o processo usando ferramentas do sistema operacional.
 
-Para configurar execução diária automática:
+### No Linux ou macOS (usando cron)
 
 1. Abra o editor crontab:
-```bash
-crontab -e
-```
+   ```bash
+   crontab -e
+   ```
 
-2. Adicione a linha para execução (exemplo: todos os dias às 02:00):
-```
-0 2 * * * cd /caminho/completo/para/sistema_dados_climaticos && python cli.py coleta --modo atual > /dev/null 2>&1
-```
+2. Adicione linhas para execução programada:
+   ```
+   # Coletar dados atuais diariamente às 02:00
+   0 2 * * * cd /caminho/completo/para/sistema_dados_climaticos && python cli.py coleta --modo atual > /dev/null 2>&1
 
-3. Para execução semanal de dados históricos (exemplo: todo domingo às 03:00):
-```
-0 3 * * 0 cd /caminho/completo/para/sistema_dados_climaticos && python cli.py coleta --modo historico > /dev/null 2>&1
-```
+   # Coletar dados históricos semanalmente aos domingos às 03:00
+   0 3 * * 0 cd /caminho/completo/para/sistema_dados_climaticos && python cli.py coleta --modo historico > /dev/null 2>&1
+   ```
 
-### Usando Agendador de Tarefas (Windows)
+3. Salve e feche o editor
 
-1. Crie um arquivo batch (`coletar_diario.bat`):
-```
-@echo off
-cd C:\caminho\para\sistema_dados_climaticos
-python cli.py coleta --modo atual
-```
+### No Windows (usando Agendador de Tarefas)
+
+1. Crie um arquivo batch `coletar_dados.bat`:
+   ```batch
+   @echo off
+   cd C:\caminho\para\sistema_dados_climaticos
+   python cli.py coleta --modo atual
+   ```
 
 2. Abra o Agendador de Tarefas do Windows:
-   - Crie uma nova tarefa básica
-   - Defina o gatilho como diário às 02:00
-   - Como ação, selecione "Iniciar um programa"
-   - Navegue até o arquivo batch criado
+   - Pesquise por "Agendador de Tarefas" no menu Iniciar
+   - Clique em "Criar Tarefa Básica"
+   - Defina um nome como "Coleta Diária de Dados Climáticos"
+   - Escolha "Diariamente" e defina o horário para 02:00
+   - Selecione "Iniciar um programa" e navegue até o arquivo .bat criado
+   - Conclua o assistente
+
+Repita o processo para a coleta histórica semanal se necessário.
+
+## Perguntas Frequentes
+
+### Perguntas Gerais
+
+**P: Quantas regiões posso monitorar simultaneamente?**  
+R: Tecnicamente, não há limite fixo, mas recomendamos até 50 regiões para manter um bom desempenho e não exceder limites de API. As APIs gratuitas têm limites diários de requisições.
+
+**P: Os dados são atualizados automaticamente?**  
+R: Não. Você precisa iniciar a coleta manualmente ou configurar automação usando cron ou Agendador de Tarefas.
+
+**P: Posso usar o sistema offline?**  
+R: Parcialmente. A coleta de novos dados requer conexão à internet, mas a análise de dados já coletados funciona offline.
+
+**P: Como faço para atualizar o sistema?**  
+R: Use git para atualizar os arquivos (`git pull`), depois execute o script de instalação novamente para atualizar dependências.
+
+### Questões Técnicas
+
+**P: Como alterar o período de dados históricos?**  
+R: Por padrão, o sistema coleta até 15 anos de dados históricos. Você pode alterar isso usando o parâmetro `--anos` no modo de comando.
+
+**P: É possível exportar dados para outras ferramentas como PowerBI?**  
+R: Sim. Exporte os dados em formato CSV, que pode ser importado pela maioria das ferramentas de análise.
+
+**P: Ocorreu um erro "chave API inválida" mesmo com a chave correta. O que fazer?**  
+R: Verifique se a chave foi ativada (pode levar algumas horas após o cadastro). Tente usar a chave diretamente no navegador para confirmar que está funcionando.
+
+**P: Os logs estão ocupando muito espaço. Como limpar?**  
+R: Use a função "Limpar logs antigos" no menu "Logs e Monitoramento" do CLI.
 
 ## Solução de Problemas
 
 ### Problemas Comuns e Soluções
 
-| Problema | Causa Provável | Solução |
-|----------|---------------|---------|
-| Falha na API OpenWeather | Chave de API inválida ou limites excedidos | Verifique a chave API em config/credenciais.json; considere obter uma chave com mais requisições permitidas |
-| Falha na API INMET | Token inválido ou estação inexistente | Verifique o token e o código da estação; consulte o portal do INMET para códigos atualizados |
-| Falta de espaço em disco | Muitos dados históricos coletados | Use o CLI para limpar logs antigos; considere arquivar dados antigos |
-| Erros de dependências | Bibliotecas Python desatualizadas ou faltando | Execute `pip install --upgrade -r requisitos.txt` |
-| Permissões de arquivo | Problemas de acesso aos diretórios | Verifique permissões em "Configurações" > "Verificar diretórios do sistema" |
+#### Falhas na Coleta de Dados
 
-### Verificação de Diretórios
+**Problema**: Erro "API key not valid" ao coletar dados
+**Solução**: 
+1. Verifique se digitou a chave corretamente
+2. Confirme se a chave está ativa na sua conta OpenWeather
+3. Aguarde algumas horas após criar uma nova chave
+4. Tente a coleta com a API secundária (INMET)
 
-Para verificar e corrigir problemas de diretórios:
+**Problema**: Erro "Não foi possível obter dados para [região]"
+**Solução**:
+1. Verifique sua conexão com a internet
+2. Confirme se as coordenadas da região estão corretas
+3. Verifique os logs para mensagens de erro detalhadas
+4. Tente coletar novamente mais tarde (pode ser um problema temporário da API)
 
-1. Execute `python cli.py`
-2. Selecione "Configurações" > "Verificar diretórios do sistema"
-3. O sistema verificará a existência e permissões de todos os diretórios
-4. Se encontrar diretórios ausentes, oferecerá a opção de criá-los
+#### Problemas de Visualização
 
-### Verificação de Credenciais
+**Problema**: Gráficos não são exibidos
+**Solução**:
+1. Confirme que o matplotlib está instalado (`pip install matplotlib`)
+2. Verifique se há dados disponíveis para o período selecionado
+3. Tente um período diferente ou outra região
 
-Para verificar e atualizar credenciais:
+**Problema**: Erro ao exportar para Excel
+**Solução**: 
+1. Instale a biblioteca opcional openpyxl: `pip install openpyxl`
+2. Verifique permissões de escrita no diretório de destino
 
-1. Execute `python cli.py`
-2. Selecione "Configurações" > "Configurar credenciais de API"
-3. O sistema mostrará as credenciais atuais e permitirá atualizá-las
+#### Problemas de Sistema
 
-## FAQ
+**Problema**: Mensagem "Diretório não encontrado"
+**Solução**: Use o menu "Verificar diretórios do sistema" para identificar e criar diretórios ausentes
 
-### Perguntas Frequentes
+**Problema**: Erro "ModuleNotFoundError" ao iniciar o sistema
+**Solução**: Reinstale as dependências com `pip install -r requisitos.txt`
 
-**P: Quantas regiões posso monitorar simultaneamente?**  
-R: O sistema não tem limite técnico, mas recomendamos até 50 regiões para manter desempenho adequado e não exceder limites das APIs. Lembre-se que a API gratuita do OpenWeather tem limites de requisições por minuto.
+### Verificação do Sistema
 
-**P: Como adicionar uma nova região agrícola?**  
-R: Use o CLI em "Gerenciar Regiões" > "Adicionar nova região", ou edite diretamente o arquivo `config/regioes.json`.
+Se encontrar problemas, execute estas verificações básicas:
 
-**P: O sistema funciona offline?**  
-R: Não. O sistema requer conexão internet para acessar as APIs de dados climáticos. Uma vez coletados, os dados podem ser analisados offline.
+1. **Verifique as dependências**:
+   ```bash
+   pip install -r requisitos.txt
+   ```
 
-**P: Como aumentar o período histórico para mais de 15 anos?**  
-R: Edite a constante `ANOS_HISTORICO` no arquivo `src/coletor_climatico.py`. Note que períodos muito longos aumentam significativamente o tempo de coleta e o armazenamento necessário.
+2. **Verifique os diretórios**:
+   ```bash
+   python cli.py
+   # Selecione: Configurações > Verificar diretórios do sistema
+   ```
 
-**P: É possível exportar os dados para outras ferramentas?**  
-R: Sim, os dados são armazenados em arquivos CSV que podem ser facilmente importados por Excel, Power BI, Tableau, R, e outras ferramentas de análise. Use a função "Exportação de Dados" no CLI.
+3. **Verifique os logs**:
+   ```bash
+   python cli.py
+   # Selecione: Logs e Monitoramento > Visualizar logs do sistema
+   ```
 
-**P: Ocorreu um erro de "chave API inválida" mesmo com a chave correta**  
-R: Verifique se a chave foi ativada (pode levar algumas horas após o cadastro); tente usar a chave em um teste direto via navegador para confirmar sua validade.
+4. **Verifique as credenciais**:
+   ```bash
+   python cli.py
+   # Selecione: Configurações > Configurar credenciais de API
+   ```
 
-**P: Como automatizar a coleta para execução diária?**  
-R: Use cron (Linux/Mac) ou o Agendador de Tarefas (Windows) conforme detalhado na seção [Automação de Coleta](#automação-de-coleta).
+## Suporte e Contato
 
-**P: Os logs estão ocupando muito espaço. Como limpar logs antigos?**  
-R: Use a função "Limpar logs antigos" no menu "Logs e Monitoramento" do CLI. Você pode escolher manter apenas logs recentes.
+### Como Obter Ajuda
 
----
+Se você encontrar problemas não resolvidos nesta documentação:
 
-## Informações de Contato
+1. **Consulte os logs**: A maioria dos erros será registrada nos arquivos de log
+2. **Verifique as Perguntas Frequentes** neste documento
+3. **Reporte problemas** no repositório do GitHub
+4. **Entre em contato** com a equipe de suporte
 
-Para suporte e esclarecimentos sobre o sistema, entre em contato:
+### Contato
 
-- **Suporte Técnico**: suporte@exemplo.com.br
-- **Repositório**: github.com/seuusuario/sistema_dados_climaticos
+- **Email de Suporte**: suporte@exemplo.com.br
+- **Repositório GitHub**: github.com/seuusuario/sistema_dados_climaticos
 - **Documentação Online**: docs.exemplo.com/sistema_climatico
-
-## Histórico de Atualizações
-
-- **v1.0.0** (Abril/2025): Versão inicial
-  - Implementação de coleta de dados atual e histórico
-  - Sistema de failover entre APIs
-  - CLI interativo completo
-  - Organização de logs e dados por ano/mês
